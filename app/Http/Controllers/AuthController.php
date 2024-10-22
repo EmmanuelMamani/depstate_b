@@ -19,7 +19,6 @@ class AuthController extends Controller
         $validator = Validator::make(request()->all(), [
             'name' => 'required',
             'email' => 'required|email|unique:users',
-            'rol' => 'required',
             'password' => 'required|min:8',
         ]);
   
@@ -30,7 +29,6 @@ class AuthController extends Controller
         $user = new User;
         $user->name = request()->name;
         $user->email = request()->email;
-        $user->rol = request()->rol;
         $user->password = bcrypt(request()->password);
         $user->save();
         return response()->json($user, 201);
@@ -97,7 +95,7 @@ class AuthController extends Controller
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'expires_in' => auth()->factory()->getTTL() * 525600
         ]);
     }
 }
