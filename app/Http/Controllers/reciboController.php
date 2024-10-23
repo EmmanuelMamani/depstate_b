@@ -31,7 +31,7 @@ class reciboController extends Controller
         }
     }
     public function detalles($id){
-        $detalles=recibo_detalle::where('recibo_id',$id)->orderBy('id', 'desc')->get();
+        $detalles=recibo_detalle::where('recibo_id',$id)->orderBy('id', 'asc')->get();
         return response()->json(['detalles'=>$detalles]);
     }
     public function pagar(Request $request, $id){
