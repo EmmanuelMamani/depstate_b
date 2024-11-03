@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('departamento');
             $table->decimal('mt2', 8, 2)->nullable();
-            $table->decimal('espensa', 8, 2)->nullable();
+            $table->decimal('expensa', 8, 2)->nullable();
             $table->string('propietario')->nullable();
             $table->enum('estado',['libre','ocupado']);
             $table->unsignedBigInteger('bloque_id');

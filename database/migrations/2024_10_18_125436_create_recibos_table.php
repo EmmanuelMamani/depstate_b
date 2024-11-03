@@ -16,8 +16,9 @@ return new class extends Migration
             $table->string('recibo');
             $table->string('nombre');
             $table->boolean('pagado');
-            $table->enum('metodo_pago',['efectivo','tarjeta','ninguno']);
             $table->decimal('total', 8, 2);
+            $table->decimal('saldo', 8, 2);
+            $table->string('nota')->nullable();
             $table->unsignedBigInteger('departamento_id');
             $table->foreign('departamento_id')->references('id')->on('departamentos')->onDelete('cascade');
             $table->unsignedBigInteger('user_id');

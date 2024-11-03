@@ -14,4 +14,10 @@ class recibo extends Model
     public function user(){
         return $this->belongsTo(user::class);
     }
+    public function detalles(){
+        return $this->hasMany(recibo_detalle::class);
+    }
+    public function pagos(){
+        return $this->hasMany(pago::class);
+    }
 }
