@@ -24,6 +24,7 @@ class reciboController extends Controller
         $recibo->user_id=$request->user_id;
         $recibo->nombre=$request->nombre;
         $recibo->nota=$request->nota;
+        $recibo->gestion=$request->gestion;
         $recibo->save();
         $this->create_detalle($request->detalles, $recibo->id);
         if($request->metodo_pago!='ninguno'){
@@ -69,16 +70,17 @@ class reciboController extends Controller
         $otros= $this->detalles_fechas($request->inicio,$request->fin,'otros');
         $efectivo= $this->metodo_pago_fechas($request->inicio,$request->fin,'efectivo');
         $tarjeta= $this->metodo_pago_fechas($request->inicio,$request->fin,'tarjeta');
-        return response()->json( [
-            'expesa'=>$expensa,
-            'agua'=>$agua,
-            'piscina'=>$piscina,
-            'local'=>$local,
-            'multa'=>$multa,
-            'otros'=>$otros,
-            'efectivo'=>$efectivo,
-            'tarjeta'=>$tarjeta
+        return response()->json([
+            ['detalle' => 'Expensa','monto' => $expensa,'icono' => 'material-symbols:apartment'],
+            ['detalle' => 'Agua','monto' => $agua,'icono' => 'material-symbols:water-drop'],
+            ['detalle' => 'Piscina','monto' => $piscina,'icono' => 'material-symbols:pool'],
+            ['detalle' => 'Local','monto' => $local,'icono' => 'material-symbols:store'],
+            ['detalle' => 'Multa','monto' => $multa,'icono' => 'material-symbols:document-scanner',],
+            ['detalle' => 'Otros','monto' => $otros,'icono' => 'material-symbols:window-sharp'],
+            ['detalle' => 'Efectivo','monto' => $efectivo,'icono' => 'material-symbols:attach-money',],
+            ['detalle' => 'Tarjeta','monto' => $tarjeta,'icono' => 'material-symbols:credit-card']
         ]);
+        
     }
 
     private function detalles_fechas($inicio,$fin,$detalle){
