@@ -65,8 +65,7 @@ return [
     |
     */
 
-    'timezone' => env('APP_TIMEZONE', 'UTC'),
-
+    'timezone' => 'America/La_Paz',
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
