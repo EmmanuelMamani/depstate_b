@@ -15,11 +15,13 @@ Route::group(['middleware' => 'api','prefix' => 'auth'], function ($router) {
 });
 //bloque
 Route::post('/bloque', [bloqueController::class, 'create'])->middleware('auth:api');
+Route::post('/recibos_mes', [bloqueController::class, 'recibos_mes'])->middleware('auth:api');
 Route::get('/bloque', [bloqueController::class, 'bloques'])->middleware('auth:api');
 Route::get('/bloque/{id}/departamentos', [bloqueController::class, 'departamentos'])->middleware('auth:api');
 //recibo
 Route::post('/recibo', [reciboController::class, 'create'])->middleware('auth:api');
 Route::get('/recibo/{id}/detalles', [reciboController::class, 'detalles'])->middleware('auth:api');
+Route::get('/recibos', [reciboController::class, 'recibos'])->middleware('auth:api');
 Route::patch('/recibo/{id}/pagar', [reciboController::class, 'pagar'])->middleware('auth:api');
 Route::post('/recibo/reporte_detalles', [reciboController::class, 'reporte_detalles'])->middleware('auth:api');
 //departamento

@@ -33,6 +33,15 @@ class reciboController extends Controller
         return response()->json($recibo);
     }
 
+    public function recibos(){
+        $recibos = Recibo::select('recibos.*', 'departamentos.departamento', 'bloques.bloque')
+                        ->join('departamentos', 'departamentos.id', '=', 'recibos.departamento_id')
+                        ->join('bloques', 'bloques.id', '=', 'departamentos.bloque_id')
+                        ->orderBy(DB::raw('recibos.recibo::NUMERIC'), 'desc')
+                        ->get();
+        return response()->json($recibos);
+    }
+
     private function create_detalle($detalles,$recibo_id){
         foreach($detalles as $detalle){
             $new_detalle= new recibo_detalle;
