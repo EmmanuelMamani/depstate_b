@@ -28,24 +28,16 @@ class bloqueController extends Controller
     }
     
     public function recibos_mes(Request $request){
-        $meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-        $mes = $meses[$request->mes];
-        $sql="SELECT d.departamento,d.bloque_id,re.total,re.saldo,re.pagado,re.recibo,
+        $sql="SELECT d.departamento,d.bloque_id,r.total,r.saldo,r.pagado,r.recibo,r.fecha_recibo,r.mes_correspondiente,
                     CASE 
-                        WHEN re.pagado IS NULL THEN 'sin recibo'
-                        WHEN re.pagado = false THEN 'sin pagar'
-                        WHEN re.pagado = true THEN 'pagado'
+                        WHEN r.pagado IS NULL THEN 'sin recibo'
+                        WHEN r.pagado = false THEN 'sin pagar'
+                        WHEN r.pagado = true THEN 'pagado'
                     END AS estado
-                FROM 
-                    departamentos d
-                LEFT JOIN (
-                    SELECT r.* 
-                    FROM recibo_detalles rd 
-                    INNER JOIN recibos r ON r.id = rd.recibo_id AND rd.detalle ILIKE '%$mes%'
-                    where r.gestion=$request->gestion
-                ) AS re ON re.departamento_id = d.id 
-                WHERE d.bloque_id = $request->bloque
-                ORDER BY d.id;";
+                from departamentos d 
+                left join recibos r on d.id =r.departamento_id  
+                where d.bloque_id =$request->bloque and TO_CHAR(r.fecha_recibo, 'YYYY-MM') = '$request->fecha'
+                order by d.id";
         $departamentos = DB::select($sql);
         return response()->json($departamentos);
     }

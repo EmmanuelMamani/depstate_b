@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('total', 8, 2);
             $table->decimal('saldo', 8, 2);
             $table->string('nota')->nullable();
+            $table->integer('gestion');
             $table->unsignedBigInteger('departamento_id');
             $table->foreign('departamento_id')->references('id')->on('departamentos')->onDelete('cascade');
             $table->unsignedBigInteger('user_id');

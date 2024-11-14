@@ -24,30 +24,36 @@ class reciboController extends Controller
         $recibo->user_id=$request->user_id;
         $recibo->nombre=$request->nombre;
         $recibo->nota=$request->nota;
-        $recibo->gestion=$request->gestion;
+        $recibo->fecha_recibo=$request->fecha_recibo;
+        $recibo->mes_correspondiente=$request->mes_correspondiente;
         $recibo->save();
-        $this->create_detalle($request->detalles, $recibo->id);
+        $this->create_detalle($request->detalles, $recibo->id,$request->fecha_recibo);
         if($request->metodo_pago!='ninguno'){
             $this->pagar($request,$recibo->id);
         }
         return response()->json($recibo);
     }
 
-    public function recibos(){
-        $recibos = Recibo::select('recibos.*', 'departamentos.departamento', 'bloques.bloque')
-                        ->join('departamentos', 'departamentos.id', '=', 'recibos.departamento_id')
-                        ->join('bloques', 'bloques.id', '=', 'departamentos.bloque_id')
-                        ->orderBy(DB::raw('recibos.recibo::NUMERIC'), 'desc')
-                        ->get();
+    public function recibos(Request $request){
+        $recibos = DB::table('recibos')
+            ->select('recibos.*', 'departamentos.departamento', 'bloques.bloque')
+            ->join('departamentos', 'departamentos.id', '=', 'recibos.departamento_id')
+            ->join('bloques', 'bloques.id', '=', 'departamentos.bloque_id')
+            ->whereRaw("TO_CHAR(recibos.fecha_recibo, 'YYYY-MM') = ?", [$request->fecha])
+            ->orderByRaw('recibos.recibo::NUMERIC DESC')
+            ->get();
+        
         return response()->json($recibos);
-    }
+    }    
 
-    private function create_detalle($detalles,$recibo_id){
+    private function create_detalle($detalles,$recibo_id,$fecha){
         foreach($detalles as $detalle){
             $new_detalle= new recibo_detalle;
             $new_detalle->detalle = $detalle['detalle'];
             $new_detalle->monto = $detalle['monto'];
             $new_detalle->recibo_id = $recibo_id;
+            $new_detalle->created_at= $fecha;
+            $new_detalle->updated_at= $fecha;
             $new_detalle->save();
         }
     }
@@ -66,19 +72,23 @@ class reciboController extends Controller
         $pago->recibo_id=$id;
         $pago->metodo=$request->metodo_pago;
         $pago->monto=$request->total;
+        if($request->fecha_recibo){
+            $pago->created_at=$request->fecha_recibo;
+            $pago->updated_at=$request->fecha_recibo;
+        }
         $pago->save();
         return response()->json($recibo);
     }
 
     public function reporte_detalles(Request $request){
-        $expensa= $this->detalles_fechas($request->inicio,$request->fin,'expensa');
-        $agua= $this->detalles_fechas($request->inicio,$request->fin,'agua');
-        $piscina= $this->detalles_fechas($request->inicio,$request->fin,'piscina');
-        $local= $this->detalles_fechas($request->inicio,$request->fin,'local');
-        $multa= $this->detalles_fechas($request->inicio,$request->fin,'multa');
-        $otros= $this->detalles_fechas($request->inicio,$request->fin,'otros');
-        $efectivo= $this->metodo_pago_fechas($request->inicio,$request->fin,'efectivo');
-        $tarjeta= $this->metodo_pago_fechas($request->inicio,$request->fin,'tarjeta');
+        $expensa= $this->detalles_fechas($request->inicio,$request->fin,'expensa',$request->bloque??null);
+        $agua= $this->detalles_fechas($request->inicio,$request->fin,'agua',$request->bloque??null);
+        $piscina= $this->detalles_fechas($request->inicio,$request->fin,'piscina',$request->bloque??null);
+        $local= $this->detalles_fechas($request->inicio,$request->fin,'local',$request->bloque??null);
+        $multa= $this->detalles_fechas($request->inicio,$request->fin,'multa',$request->bloque??null);
+        $otros= $this->detalles_fechas($request->inicio,$request->fin,'otros',$request->bloque??null);
+        $efectivo= $this->metodo_pago_fechas($request->inicio,$request->fin,'efectivo',$request->bloque??null);
+        $tarjeta= $this->metodo_pago_fechas($request->inicio,$request->fin,'tarjeta',$request->bloque??null);
         return response()->json([
             ['detalle' => 'Expensa','monto' => $expensa,'icono' => 'material-symbols:apartment'],
             ['detalle' => 'Agua','monto' => $agua,'icono' => 'material-symbols:water-drop'],
@@ -92,23 +102,34 @@ class reciboController extends Controller
         
     }
 
-    private function detalles_fechas($inicio,$fin,$detalle){
-        $detalle = DB::table('recibo_detalles as rd')
-                    ->join('recibos as r', function ($join) {
-                        $join->on('r.id', '=', 'rd.recibo_id')
-                            ->where('r.pagado', true);
-                    })
-                    ->where('rd.detalle', 'ILIKE', "%$detalle%")
-                    ->whereDate('rd.updated_at', '>=', "$inicio")
-                    ->whereDate('rd.updated_at', '<=', "$fin")
-                    ->sum('rd.monto');
-        return $detalle ?? 0;
+    private function detalles_fechas($inicio, $fin, $detalle, $bloqueId = null) {
+
+        $query = recibo_detalle::where('detalle', 'ilike', "%$detalle%")
+            ->whereBetween('created_at', [$inicio, $fin]);
+    
+
+        if ($bloqueId !== null) {
+            $query->whereHas('recibo.departamento', function ($q) use ($bloqueId) {
+                $q->where('bloque_id', $bloqueId);
+            });
+        }
+    
+        return $query->sum('monto') ?? 0;
     }
-    private function metodo_pago_fechas($inicio,$fin,$metodo){
-        $detalle = pago::where('metodo',$metodo)
-                    ->whereDate('updated_at', '>=', "$inicio")
-                    ->whereDate('updated_at', '<=', "$fin")
-                    ->sum('monto');
-        return $detalle ?? 0;
+    
+    
+    private function metodo_pago_fechas($inicio, $fin, $metodo, $bloqueId = null) {
+        $query = pago::where('metodo', $metodo)
+            ->whereBetween('created_at', [$inicio, $fin]);
+    
+        if ($bloqueId !== null) {
+            $query->whereHas('recibo.departamento', function ($q) use ($bloqueId) {
+                $q->where('bloque_id', $bloqueId);
+            });
+        }
+
+        return $query->sum('monto')??0;
+  
     }
+    
 }

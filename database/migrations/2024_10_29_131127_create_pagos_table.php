@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('metodo');
             $table->decimal('monto', 8, 2);
-            $table->integer('gestion');
             $table->unsignedBigInteger('recibo_id');
             $table->foreign('recibo_id')->references('id')->on('recibos')->onDelete('cascade');
             $table->timestamps();
