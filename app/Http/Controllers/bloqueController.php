@@ -35,8 +35,8 @@ class bloqueController extends Controller
                         WHEN r.pagado = true THEN 'pagado'
                     END AS estado
                 from departamentos d 
-                left join recibos r on d.id =r.departamento_id  
-                where d.bloque_id =$request->bloque and TO_CHAR(r.fecha_recibo, 'YYYY-MM') = '$request->fecha'
+                left join recibos r on d.id =r.departamento_id  and TO_CHAR(r.fecha_recibo, 'YYYY-MM') = '$request->fecha'
+                where d.bloque_id =$request->bloque 
                 order by d.id";
         $departamentos = DB::select($sql);
         return response()->json($departamentos);
