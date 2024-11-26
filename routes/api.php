@@ -20,6 +20,7 @@ Route::get('/bloque', [bloqueController::class, 'bloques'])->middleware('auth:ap
 Route::get('/bloque/{id}/departamentos', [bloqueController::class, 'departamentos'])->middleware('auth:api');
 //recibo
 Route::post('/recibo', [reciboController::class, 'create'])->middleware('auth:api');
+Route::delete('/recibo/{id}', [reciboController::class, 'delete'])->middleware('auth:api');
 Route::get('/recibo/{id}/detalles', [reciboController::class, 'detalles'])->middleware('auth:api');
 Route::post('/recibos', [reciboController::class, 'recibos'])->middleware('auth:api');
 Route::patch('/recibo/{id}/pagar', [reciboController::class, 'pagar'])->middleware('auth:api');

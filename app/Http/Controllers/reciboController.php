@@ -131,5 +131,9 @@ class reciboController extends Controller
         return $query->sum('monto')??0;
   
     }
-    
+    public function delete($id){
+        $recibo = recibo::find($id);
+        $recibo->delete();
+        return response()->json('Eliminado');
+    }
 }
