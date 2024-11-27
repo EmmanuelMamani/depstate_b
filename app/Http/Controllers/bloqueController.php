@@ -41,4 +41,19 @@ class bloqueController extends Controller
         $departamentos = DB::select($sql);
         return response()->json($departamentos);
     }
+
+    public function recibos_mes_correspondiente(Request $request){
+        $sql="SELECT d.departamento,d.bloque_id,r.total,r.saldo,r.pagado,r.recibo,r.fecha_recibo,r.mes_correspondiente,
+                    CASE 
+                        WHEN r.pagado IS NULL THEN 'sin recibo'
+                        WHEN r.pagado = false THEN 'sin pagar'
+                        WHEN r.pagado = true THEN 'pagado'
+                    END AS estado
+                from departamentos d 
+                left join recibos r on d.id =r.departamento_id  and r.mes_correspondiente = '$request->fecha'
+                where d.bloque_id =$request->bloque 
+                order by d.id";
+        $departamentos = DB::select($sql);
+        return response()->json($departamentos);
+    }
 }

@@ -101,12 +101,32 @@ class reciboController extends Controller
         ]);
         
     }
+    public function reporte_detalles_mes_correspondiente(Request $request){
+        $expensa= $this->detalles_mes_correspondiente($request->fecha,'expensa',$request->bloque);
+        $agua= $this->detalles_mes_correspondiente($request->fecha,'agua',$request->bloque);
+        $piscina= $this->detalles_mes_correspondiente($request->fecha,'piscina',$request->bloque);
+        $local= $this->detalles_mes_correspondiente($request->fecha,'local',$request->bloque);
+        $multa= $this->detalles_mes_correspondiente($request->fecha,'multa',$request->bloque);
+        $otros= $this->detalles_mes_correspondiente($request->fecha,'otros',$request->bloque);
+        $efectivo= $this->metodo_pago_mes_correspondiente($request->fecha,'efectivo',$request->bloque);
+        $tarjeta= $this->metodo_pago_mes_correspondiente($request->fecha,'tarjeta',$request->bloque);
+        return response()->json([
+            ['detalle' => 'Expensa','monto' => $expensa,'icono' => 'material-symbols:apartment'],
+            ['detalle' => 'Agua','monto' => $agua,'icono' => 'material-symbols:water-drop'],
+            ['detalle' => 'Piscina','monto' => $piscina,'icono' => 'material-symbols:pool'],
+            ['detalle' => 'Local','monto' => $local,'icono' => 'material-symbols:store'],
+            ['detalle' => 'Multa','monto' => $multa,'icono' => 'material-symbols:document-scanner',],
+            ['detalle' => 'Otros','monto' => $otros,'icono' => 'material-symbols:window-sharp'],
+            ['detalle' => 'Efectivo','monto' => $efectivo,'icono' => 'material-symbols:attach-money',],
+            ['detalle' => 'Tarjeta','monto' => $tarjeta,'icono' => 'material-symbols:credit-card']
+        ]);
+        
+    }
 
     private function detalles_fechas($inicio, $fin, $detalle, $bloqueId = null) {
 
         $query = recibo_detalle::where('detalle', 'ilike', "%$detalle%")
             ->whereBetween('created_at', [$inicio, $fin]);
-    
 
         if ($bloqueId !== null) {
             $query->whereHas('recibo.departamento', function ($q) use ($bloqueId) {
@@ -116,7 +136,6 @@ class reciboController extends Controller
     
         return $query->sum('monto') ?? 0;
     }
-    
     
     private function metodo_pago_fechas($inicio, $fin, $metodo, $bloqueId = null) {
         $query = pago::where('metodo', $metodo)
@@ -135,5 +154,33 @@ class reciboController extends Controller
         $recibo = recibo::find($id);
         $recibo->delete();
         return response()->json('Eliminado');
+    }
+    public function buscar($n_recibo){
+        $recibo = recibo::where('recibo',$n_recibo)->get()->last();
+        $detalles=recibo_detalle::where('recibo_id',$recibo->id)->orderBy('id', 'asc')->get();
+        return response()->json(['recibo'=>$recibo,'detalles'=>$detalles]);
+    }
+    private function detalles_mes_correspondiente($fecha,$detalle,$bloque){
+        $total = DB::select("SELECT SUM(rd.monto) as total
+                            FROM recibo_detalles rd
+                            WHERE rd.detalle ILIKE '%$detalle%'
+                            AND rd.recibo_id IN 
+                                (SELECT r.id
+                                FROM recibos r
+                                INNER JOIN departamentos d ON d.id = r.departamento_id
+                                WHERE r.mes_correspondiente = '$fecha'
+                                AND d.bloque_id = $bloque)");
+        return $total[0]->total??0;
+    }
+    private function metodo_pago_mes_correspondiente($fecha,$metodo,$bloque){
+        $total = DB::select("SELECT sum(p.monto) AS total
+                            FROM pagos p
+                            WHERE p.metodo ilike '%$metodo%'
+                            AND p.recibo_id IN 
+                            (SELECT r.id 
+                            FROM recibos r 
+                            INNER JOIN departamentos d ON d.id=r.departamento_id
+                            WHERE r.mes_correspondiente ='$fecha' and d.bloque_id=$bloque)");
+        return $total[0]->total??0;
     }
 }
