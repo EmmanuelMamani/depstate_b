@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\recibo;
 use App\Models\pago;
 use App\Models\recibo_detalle;
+use App\Models\departamento;
 use Illuminate\Support\Facades\DB;
 
 class reciboController extends Controller
@@ -183,4 +184,51 @@ class reciboController extends Controller
                             WHERE r.mes_correspondiente ='$fecha' and d.bloque_id=$bloque)");
         return $total[0]->total??0;
     }
+
+    public function create_recibos(Request $request) {
+        $recibos = [];
+        $detalles = ['expensa', 'agua', 'local', 'piscina', 'multa', 'otros'];
+    
+        foreach ($request->recibos as $recibo) {
+            $departamento = departamento::where('departamento', $recibo['departamento'])
+                                        ->where('bloque_id', $request->bloque)
+                                        ->first();
+    
+            if ($departamento) {
+                $total = $departamento->expensa;
+                foreach ($detalles as $detalle) {
+                    $total += $recibo[$detalle] ?? 0; 
+                }
+
+                $new_recibo = new recibo;
+                $new_recibo->recibo = 0;
+                $new_recibo->pagado = false;
+                $new_recibo->total = $total;
+                $new_recibo->saldo = $total;
+                $new_recibo->departamento_id = $departamento->id;
+                $new_recibo->user_id = $request->user_id;
+                $new_recibo->nombre = $departamento->propietario;
+                $new_recibo->fecha_recibo = now();
+                $new_recibo->mes_correspondiente = $request->mes;
+                $new_recibo->automatico = true;
+                $new_recibo->save();
+    
+                $recibos[] = $new_recibo;
+    
+                foreach ($detalles as $detalle) {
+                    $monto = $detalle === 'expensa' ? $departamento->expensa : ($recibo[$detalle] ?? 0);
+                    if ($monto > 0) {
+                        $new_detalle = new recibo_detalle;
+                        $new_detalle->detalle = $detalle;
+                        $new_detalle->monto = $monto;
+                        $new_detalle->recibo_id = $new_recibo->id;
+                        $new_detalle->save();
+                    }
+                }
+            }
+        }
+    
+        return response()->json($recibos);
+    }
+    
 }
