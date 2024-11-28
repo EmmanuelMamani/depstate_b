@@ -26,6 +26,7 @@ Route::get('/recibo/{id}/detalles', [reciboController::class, 'detalles'])->midd
 Route::get('/recibo/{n_recibo}', [reciboController::class, 'buscar'])->middleware('auth:api');
 Route::post('/recibos', [reciboController::class, 'recibos'])->middleware('auth:api');
 Route::patch('/recibo/{id}/pagar', [reciboController::class, 'pagar'])->middleware('auth:api');
+Route::patch('/recibo/{id}', [reciboController::class, 'update'])->middleware('auth:api');
 Route::post('/recibo/reporte_detalles', [reciboController::class, 'reporte_detalles'])->middleware('auth:api');
 Route::post('/recibo/reporte_detalles_mes_correspondiente', [reciboController::class, 'reporte_detalles_mes_correspondiente'])->middleware('auth:api');
 Route::post('/recibo/create_recibos', [reciboController::class, 'create_recibos'])->middleware('auth:api');

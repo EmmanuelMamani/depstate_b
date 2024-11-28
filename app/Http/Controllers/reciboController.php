@@ -35,6 +35,28 @@ class reciboController extends Controller
         return response()->json($recibo);
     }
 
+    public function update(request $request,$id){
+        $recibo=recibo::find($id);
+        $recibo->nombre=$request->nombre;
+        $recibo->fecha_recibo=$request->fecha_recibo;
+        $recibo->recibo=$request->recibo;
+        $recibo->nota=$request->nota;
+        $recibo->save();
+        $this->update_detalle_recibo($id,$request->fecha_recibo);
+        if($request->metodo_pago!='ninguno'){
+            $this->pagar($request,$recibo->id);
+        }
+        $recibo=recibo::find($id);
+        return response()->json($recibo);
+    }
+    private function update_detalle_recibo($id,$fecha){
+        $detalles=recibo_detalle::where('recibo_id',$id)->get();
+        foreach($detalles as $detalle){
+            $detalle->created_at=$fecha;
+            $detalle->updated_at=$fecha;
+            $detalle->save();
+        }
+    }
     public function recibos(Request $request){
         $recibos = DB::table('recibos')
             ->select('recibos.*', 'departamentos.departamento', 'bloques.bloque')
