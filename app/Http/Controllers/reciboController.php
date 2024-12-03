@@ -13,7 +13,7 @@ class reciboController extends Controller
 {
 
     public function create(Request $request){
-        if (Recibo::where('recibo', $request->recibo)->exists()) {
+        if (($request->recibo!=0)&&(Recibo::where('recibo', $request->recibo)->exists()) ) {
             return response()->json(['error' => 'El recibo ya existe.'], 400);
         }
         $recibo= new recibo;
@@ -147,31 +147,31 @@ class reciboController extends Controller
     }
 
     private function detalles_fechas($inicio, $fin, $detalle, $bloqueId = null) {
+        $bloque=$bloqueId!=null?"AND d.bloque_id=$bloqueId":"";
+        $sql = "SELECT COALESCE(SUM(rd.monto), 0) AS total
+                FROM recibo_detalles rd
+                INNER JOIN recibos r ON r.id = rd.recibo_id AND rd.detalle ILIKE '%$detalle%'
+                INNER JOIN departamentos d ON r.departamento_id = d.id $bloque
+                WHERE date(rd.created_at) >= '$inicio' 
+                AND date(rd.created_at) <= '$fin' 
+                AND r.pagado = true";
 
-        $query = recibo_detalle::where('detalle', 'ilike', "%$detalle%")
-            ->whereBetween('created_at', [$inicio, $fin]);
-
-        if ($bloqueId !== null) {
-            $query->whereHas('recibo.departamento', function ($q) use ($bloqueId) {
-                $q->where('bloque_id', $bloqueId);
-            });
-        }
+        $result = DB::select($sql);
     
-        return $query->sum('monto') ?? 0;
+        return $result[0]->total;
     }
     
     private function metodo_pago_fechas($inicio, $fin, $metodo, $bloqueId = null) {
-        $query = pago::where('metodo', $metodo)
-            ->whereBetween('created_at', [$inicio, $fin]);
+        
+        $bloque=$bloqueId!=null?"AND d.bloque_id=$bloqueId":"";
+        $sql=" SELECT coalesce ( sum(p.monto),0) as total from pagos p 
+                inner join recibos r on r.id =p.recibo_id and p.metodo  ilike '%$metodo%'
+                inner join departamentos d on r.departamento_id =d.id $bloque
+                where date(p.created_at)>='$inicio' and date(p.created_at)<='$fin' and r.pagado=true";
+        
+        $result = DB::select($sql);
     
-        if ($bloqueId !== null) {
-            $query->whereHas('recibo.departamento', function ($q) use ($bloqueId) {
-                $q->where('bloque_id', $bloqueId);
-            });
-        }
-
-        return $query->sum('monto')??0;
-  
+        return $result[0]->total;
     }
     public function delete($id){
         $recibo = recibo::find($id);
