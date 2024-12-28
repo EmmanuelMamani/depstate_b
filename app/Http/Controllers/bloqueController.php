@@ -76,7 +76,8 @@ class bloqueController extends Controller
             inner join departamentos d on d.id = r.departamento_id 
             where d.bloque_id =$id
             GROUP BY 
-                r.mes_correspondiente;";
+                r.mes_correspondiente 
+            order by r.mes_correspondiente;";
         $meses = DB::select($sql);
         return response()->json($meses);
     }
