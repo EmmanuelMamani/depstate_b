@@ -19,7 +19,17 @@ class bloqueController extends Controller
         return response()->json($bloques);
     }
     public function departamentos($id){
-        $departamentos = departamento::where('bloque_id',$id)->orderBy('id', 'asc')->get();
+        $departamentos = DB::select("
+                        select d.*, coalesce(r.saldo, 0) as saldo
+                        from departamentos d
+                        left join (
+                            select r.departamento_id, sum(r.saldo) as saldo
+                            from recibos r
+                            group by r.departamento_id
+                        ) as r on r.departamento_id = d.id
+                        where d.bloque_id = $id
+                        order by d.id asc
+                    ");
         $bloque = bloque::find($id);
         return response()->json([
             'departamentos' => $departamentos,

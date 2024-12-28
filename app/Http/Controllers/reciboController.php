@@ -113,14 +113,14 @@ class reciboController extends Controller
         $efectivo= $this->metodo_pago_fechas($request->inicio,$request->fin,'efectivo',$request->bloque??null);
         $tarjeta= $this->metodo_pago_fechas($request->inicio,$request->fin,'tarjeta',$request->bloque??null);
         return response()->json([
-            ['detalle' => 'Expensa','monto' => $expensa,'icono' => 'material-symbols:apartment'],
-            ['detalle' => 'Agua','monto' => $agua,'icono' => 'material-symbols:water-drop'],
-            ['detalle' => 'Piscina','monto' => $piscina,'icono' => 'material-symbols:pool'],
-            ['detalle' => 'Local','monto' => $local,'icono' => 'material-symbols:store'],
-            ['detalle' => 'Multa','monto' => $multa,'icono' => 'material-symbols:document-scanner',],
-            ['detalle' => 'Otros','monto' => $otros,'icono' => 'material-symbols:window-sharp'],
-            ['detalle' => 'Efectivo','monto' => $efectivo,'icono' => 'material-symbols:attach-money',],
-            ['detalle' => 'Tarjeta','monto' => $tarjeta,'icono' => 'material-symbols:credit-card']
+            ['detalle' => 'Expensa','monto' => $expensa->total,'efectivo'=>$expensa->efectivo,'tarjeta'=>$expensa->tarjeta,'icono' => 'material-symbols:apartment'],
+            ['detalle' => 'Agua','monto' => $agua->total,'efectivo'=>$agua->efectivo,'tarjeta'=>$agua->tarjeta,'icono' => 'material-symbols:water-drop'],
+            ['detalle' => 'Piscina','monto' => $piscina->total,'efectivo'=>$piscina->efectivo,'tarjeta'=>$piscina->tarjeta,'icono' => 'material-symbols:pool'],
+            ['detalle' => 'Local','monto' => $local->total,'efectivo'=>$local->efectivo,'tarjeta'=>$local->tarjeta,'icono' => 'material-symbols:store'],
+            ['detalle' => 'Multa','monto' => $multa->total,'efectivo'=>$multa->efectivo,'tarjeta'=>$multa->tarjeta,'icono' => 'material-symbols:document-scanner',],
+            ['detalle' => 'Otros','monto' => $otros->total,'efectivo'=>$otros->efectivo,'tarjeta'=>$otros->tarjeta,'icono' => 'material-symbols:window-sharp'],
+            ['detalle' => 'Efectivo','monto' => $efectivo,'efectivo'=>0,'tarjeta'=>0,'icono' => 'material-symbols:attach-money',],
+            ['detalle' => 'Tarjeta','monto' => $tarjeta,'efectivo'=>0,'tarjeta'=>0,'icono' => 'material-symbols:credit-card']
         ]);
         
     }
@@ -134,31 +134,36 @@ class reciboController extends Controller
         $efectivo= $this->metodo_pago_mes_correspondiente($request->fecha,'efectivo',$request->bloque);
         $tarjeta= $this->metodo_pago_mes_correspondiente($request->fecha,'tarjeta',$request->bloque);
         return response()->json([
-            ['detalle' => 'Expensa','monto' => $expensa,'icono' => 'material-symbols:apartment'],
-            ['detalle' => 'Agua','monto' => $agua,'icono' => 'material-symbols:water-drop'],
-            ['detalle' => 'Piscina','monto' => $piscina,'icono' => 'material-symbols:pool'],
-            ['detalle' => 'Local','monto' => $local,'icono' => 'material-symbols:store'],
-            ['detalle' => 'Multa','monto' => $multa,'icono' => 'material-symbols:document-scanner',],
-            ['detalle' => 'Otros','monto' => $otros,'icono' => 'material-symbols:window-sharp'],
-            ['detalle' => 'Efectivo','monto' => $efectivo,'icono' => 'material-symbols:attach-money',],
-            ['detalle' => 'Tarjeta','monto' => $tarjeta,'icono' => 'material-symbols:credit-card']
+            ['detalle' => 'Expensa','monto' => $expensa->total,'efectivo'=>$expensa->efectivo,'tarjeta'=>$expensa->tarjeta,'icono' => 'material-symbols:apartment'],
+            ['detalle' => 'Agua','monto' => $agua->total,'efectivo'=>$agua->efectivo,'tarjeta'=>$agua->tarjeta,'icono' => 'material-symbols:water-drop'],
+            ['detalle' => 'Piscina','monto' => $piscina->total,'efectivo'=>$piscina->efectivo,'tarjeta'=>$piscina->tarjeta,'icono' => 'material-symbols:pool'],
+            ['detalle' => 'Local','monto' => $local->total,'efectivo'=>$local->efectivo,'tarjeta'=>$local->tarjeta,'icono' => 'material-symbols:store'],
+            ['detalle' => 'Multa','monto' => $multa->total,'efectivo'=>$multa->efectivo,'tarjeta'=>$multa->tarjeta,'icono' => 'material-symbols:document-scanner',],
+            ['detalle' => 'Otros','monto' => $otros->total,'efectivo'=>$otros->efectivo,'tarjeta'=>$otros->tarjeta,'icono' => 'material-symbols:window-sharp'],
+            ['detalle' => 'Efectivo','monto' => $efectivo,'efectivo'=>0,'tarjeta'=>0,'icono' => 'material-symbols:attach-money',],
+            ['detalle' => 'Tarjeta','monto' => $tarjeta,'efectivo'=>0,'tarjeta'=>0,'icono' => 'material-symbols:credit-card']
         ]);
-        
     }
 
     private function detalles_fechas($inicio, $fin, $detalle, $bloqueId = null) {
         $bloque=$bloqueId!=null?"AND d.bloque_id=$bloqueId":"";
-        $sql = "SELECT COALESCE(SUM(rd.monto), 0) AS total
+        $sql = "SELECT 
+                    COALESCE(SUM(rd.monto), 0) AS total,
+                    COALESCE(SUM(CASE WHEN p.metodo = 'tarjeta' THEN rd.monto ELSE 0 END), 0) AS tarjeta,
+                    COALESCE(SUM(CASE WHEN p.metodo = 'efectivo' THEN rd.monto ELSE 0 END), 0) AS efectivo
                 FROM recibo_detalles rd
-                INNER JOIN recibos r ON r.id = rd.recibo_id AND rd.detalle ILIKE '%$detalle%'
-                INNER JOIN departamentos d ON r.departamento_id = d.id $bloque
-                WHERE date(rd.created_at) >= '$inicio' 
-                AND date(rd.created_at) <= '$fin' 
-                AND r.pagado = true";
+                INNER JOIN recibos r ON r.id = rd.recibo_id
+                INNER JOIN departamentos d ON r.departamento_id = d.id
+                INNER JOIN pagos p ON p.recibo_id = r.id
+                WHERE rd.detalle ILIKE '%$detalle%'
+                AND date(rd.created_at) >= '$inicio'
+                AND date(rd.created_at) <= '$fin'
+                $bloque
+                AND r.pagado = true;";
 
         $result = DB::select($sql);
     
-        return $result[0]->total;
+        return $result[0];
     }
     
     private function metodo_pago_fechas($inicio, $fin, $metodo, $bloqueId = null) {
@@ -184,16 +189,20 @@ class reciboController extends Controller
         return response()->json(['recibo'=>$recibo,'detalles'=>$detalles]);
     }
     private function detalles_mes_correspondiente($fecha,$detalle,$bloque){
-        $total = DB::select("SELECT SUM(rd.monto) as total
-                            FROM recibo_detalles rd
-                            WHERE rd.detalle ILIKE '%$detalle%'
-                            AND rd.recibo_id IN 
-                                (SELECT r.id
-                                FROM recibos r
-                                INNER JOIN departamentos d ON d.id = r.departamento_id
-                                WHERE r.mes_correspondiente = '$fecha'
-                                AND d.bloque_id = $bloque)");
-        return $total[0]->total??0;
+        $total = DB::select("SELECT 
+        COALESCE(SUM(rd.monto), 0) AS total,
+        COALESCE(SUM(CASE WHEN p.metodo = 'tarjeta' THEN rd.monto ELSE 0 END), 0) AS tarjeta,
+        COALESCE(SUM(CASE WHEN p.metodo = 'efectivo' THEN rd.monto ELSE 0 END), 0) AS efectivo
+        FROM recibo_detalles rd
+        LEFT JOIN pagos p ON rd.recibo_id = p.recibo_id
+        WHERE rd.detalle ILIKE '%$detalle%'
+        AND rd.recibo_id IN (
+            SELECT r.id
+            FROM recibos r
+            INNER JOIN departamentos d ON d.id = r.departamento_id
+            WHERE r.mes_correspondiente = '$fecha'
+                AND d.bloque_id = $bloque);");
+        return $total[0];
     }
     private function metodo_pago_mes_correspondiente($fecha,$metodo,$bloque){
         $total = DB::select("SELECT sum(p.monto) AS total
