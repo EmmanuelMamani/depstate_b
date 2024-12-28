@@ -19,6 +19,7 @@ Route::post('/recibos_mes', [bloqueController::class, 'recibos_mes'])->middlewar
 Route::post('/recibos_mes_correspondiente', [bloqueController::class, 'recibos_mes_correspondiente'])->middleware('auth:api');
 Route::get('/bloque', [bloqueController::class, 'bloques'])->middleware('auth:api');
 Route::get('/bloque/{id}/departamentos', [bloqueController::class, 'departamentos'])->middleware('auth:api');
+Route::get('/bloque/{id}/estadisticas', [bloqueController::class, 'estadisticas'])->middleware('auth:api');
 //recibo
 Route::post('/recibo', [reciboController::class, 'create'])->middleware('auth:api');
 Route::delete('/recibo/{id}', [reciboController::class, 'delete'])->middleware('auth:api');

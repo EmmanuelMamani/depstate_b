@@ -66,4 +66,18 @@ class bloqueController extends Controller
         $departamentos = DB::select($sql);
         return response()->json($departamentos);
     }
+    public function estadisticas($id){
+        $sql="SELECT 
+                r.mes_correspondiente as mes, 
+                SUM(r.total) AS total, 
+                SUM(CASE WHEN r.pagado = true THEN r.total ELSE 0 END) AS pagado,
+                SUM(CASE WHEN r.pagado = false THEN r.saldo ELSE 0 END) AS saldo
+            FROM recibos r
+            inner join departamentos d on d.id = r.departamento_id 
+            where d.bloque_id =$id
+            GROUP BY 
+                r.mes_correspondiente;";
+        $meses = DB::select($sql);
+        return response()->json($meses);
+    }
 }
